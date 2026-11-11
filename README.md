@@ -38,3 +38,4 @@ git push -u origin main
 2. Click **Set up a custom domain**.
 3. Enter `blog.qalive.online`.
 4. Cloudflare automatically sets up the DNS CNAME record for you with SSL enabled.
+
