@@ -1,0 +1,84 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  schema?: Record<string, unknown>[];
+  noindex?: boolean;
+}
+
+const siteUrl = "https://blog.qalive.online";
+const mainSiteUrl = "https://qalive.online";
+const defaultTitle = "QAlive Blog – Stories, Product Updates & Live Engagement";
+const defaultDescription = "Articles, guides, and thoughts on interactive presentations, live Q&A, and building QAlive for conferences and events.";
+
+const {
+  title = defaultTitle,
+  description = defaultDescription,
+  schema = [],
+  noindex = false,
+} = Astro.props;
+
+const pathname = Astro.url.pathname.replace(/\/?$/, "/");
+const canonicalUrl = `${siteUrl}${pathname}`;
+const pageImage = `${mainSiteUrl}/images/og-image.png`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta
+      name="robots"
+      content={noindex ? "noindex, follow" : "index, follow, max-image-preview:large"}
+    />
+    <meta name="theme-color" content="#E85D4A" />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="sitemap" type="application/xml" href="/sitemap-index.xml" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={pageImage} />
+    <meta property="og:site_name" content="QAlive Blog" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@qalive" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={pageImage} />
+
+    <link rel="icon" type="image/svg+xml" href="/images/qalive-new-logo.svg" />
+    <link rel="apple-touch-icon" href="/images/qalive-new-logo.svg" />
+
+    {schema.length > 0 && (
+      <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+    )}
+
+    <script async src="https://plausible.io/js/pa-8kQzrLfQBEL26SjfGr8jG.js"></script>
+    <script>
+      ((window.plausible =
+        window.plausible ||
+        function () {
+          (plausible.q = plausible.q || []).push(arguments);
+        }),
+        (plausible.init =
+          plausible.init ||
+          function (i) {
+            plausible.o = i || {};
+          }));
+      plausible.init();
+    </script>
+  </head>
+  <body class="font-sans antialiased bg-white text-black min-h-screen flex flex-col">
+    <slot />
+  </body>
+</html>
+

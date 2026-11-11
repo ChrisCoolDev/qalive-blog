@@ -1,0 +1,278 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { getBlogPosts } from "../lib/notion";
+
+const posts = await getBlogPosts("EN");
+
+// Extraire la liste unique des topics depuis les articles Notion
+const topics = Array.from(
+  new Set(posts.map((p) => p.tag).filter(Boolean))
+);
+
+function formatDate(dateStr: string) {
+  try {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+---
+
+<Layout
+  title="QAlive Blog – Stories, Product Updates & Live Engagement"
+  description="Articles and insights on interactive presentations, live Q&A, and building QAlive for conferences and events."
+>
+  <Header />
+
+  <main class="flex-1 py-10 md:py-14 px-5 sm:px-6">
+    <div class="mx-auto max-w-[700px] w-full">
+      <!-- En-tête du blog -->
+      <header class="mb-8">
+        <div class="mb-2">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-[#E85D4A]">
+            QAlive Blog
+          </span>
+        </div>
+        <h1 class="text-[30px] md:text-[34px] font-bold tracking-[-0.6px] text-[#0A0A0A] leading-tight mb-2">
+          Stories, product updates & live engagement.
+        </h1>
+        <p class="text-[14px] md:text-[15px] text-[#666] leading-relaxed">
+          Thoughts and guides on running interactive Q&A sessions and getting the most out of your events.
+        </p>
+      </header>
+
+      <!-- Barre d'onglets des topics (style Medium) -->
+      <div class="border-b border-[#E6E6E6] mb-2">
+        <nav
+          class="flex items-center gap-6 overflow-x-auto no-scrollbar text-[14px]"
+          id="topic-tabs"
+          aria-label="Filter articles by topic"
+        >
+          <button
+            type="button"
+            class="topic-tab border-b-2 border-[#0A0A0A] text-[#0A0A0A] font-medium pb-3 -mb-[1px] whitespace-nowrap transition-colors cursor-pointer"
+            data-topic="All"
+          >
+            All
+          </button>
+          {topics.map((topic) => (
+            <button
+              type="button"
+              class="topic-tab border-b-2 border-transparent text-[#737373] hover:text-[#0A0A0A] pb-3 -mb-[1px] whitespace-nowrap transition-colors cursor-pointer"
+              data-topic={topic}
+            >
+              {topic}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      <!-- Liste des articles (flux centré, style Medium, sans sidebar ni miniatures d'images) -->
+      {posts.length === 0 ? (
+        <div class="py-16 text-center border border-[#E6E6E6] rounded-lg mt-8 bg-[#FBFBFA]">
+          <p class="text-[16px] font-medium text-[#0A0A0A] mb-1">
+            No articles published yet
+          </p>
+          <p class="text-[13px] text-[#666]">
+            Articles added in Notion will automatically appear here.
+          </p>
+        </div>
+      ) : (
+        <div id="articles-list" class="divide-y divide-[#E6E6E6]">
+          {posts.map((post) => (
+            <article
+              class="post-item py-7 md:py-8 transition-opacity"
+              data-topic={post.tag || "Product"}
+            >
+              <!-- Date de publication uniquement (sans nom d'auteur) -->
+              <div class="mb-2 text-[13px] text-[#737373]">
+                <time datetime={post.date}>
+                  {formatDate(post.date)}
+                </time>
+              </div>
+
+              <!-- Titre de l'article -->
+              <a href={`/${post.slug}`} class="group block mb-1.5">
+                <h2 class="text-[20px] md:text-[22px] font-bold text-[#0A0A0A] tracking-[-0.4px] leading-[28px] group-hover:text-[#E85D4A] transition-colors">
+                  {post.title}
+                </h2>
+              </a>
+
+              <!-- Extrait -->
+              {post.excerpt && (
+                <p class="text-[14px] md:text-[15px] leading-[22px] text-[#555] line-clamp-2 mb-3.5 font-normal">
+                  {post.excerpt}
+                </p>
+              )}
+
+              <!-- Métadonnées & Tag -->
+              <div class="flex items-center justify-between text-[13px] text-[#737373] pt-1">
+                <div class="flex items-center gap-3">
+                  {post.tag && (
+                    <button
+                      type="button"
+                      class="topic-pill inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#F5F5F3] hover:bg-[#EAEAE8] text-[#555] text-[12px] font-medium transition-colors cursor-pointer"
+                      data-filter={post.tag}
+                    >
+                      {post.tag}
+                    </button>
+                  )}
+                  {post.readingTime && (
+                    <span class="text-[12px] text-[#737373]">
+                      {post.readingTime}
+                    </span>
+                  )}
+                </div>
+
+                <a
+                  href={`/${post.slug}`}
+                  class="inline-flex items-center gap-1 text-[13px] text-[#737373] hover:text-[#0A0A0A] font-medium transition-colors"
+                >
+                  Read article
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12h14"></path>
+                    <path d="m12 5 7 7-7 7"></path>
+                  </svg>
+                </a>
+              </div>
+            </article>
+          ))}
+
+          <!-- Message si aucun article ne correspond au topic sélectionné -->
+          <div
+            id="empty-topic-message"
+            class="hidden py-14 text-center border border-[#E6E6E6] rounded-lg my-8 bg-[#FBFBFA]"
+          >
+            <p class="text-[15px] font-medium text-[#0A0A0A] mb-1">
+              No articles found in this topic
+            </p>
+            <p class="text-[13px] text-[#666] mb-4">
+              Try selecting another topic above.
+            </p>
+            <button
+              type="button"
+              id="reset-topic-btn"
+              class="inline-flex items-center justify-center h-8 px-4 text-xs font-medium rounded bg-[#0A0A0A] text-white hover:bg-[#0A0A0A]/90 transition-colors cursor-pointer"
+            >
+              View all articles
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
+
+<script>
+  function setupTopicFilter() {
+    const tabs = document.querySelectorAll(".topic-tab");
+    const pills = document.querySelectorAll(".topic-pill");
+    const articles = document.querySelectorAll(".post-item");
+    const emptyMessage = document.getElementById("empty-topic-message");
+    const resetBtn = document.getElementById("reset-topic-btn");
+
+    function setTopic(selectedTopic: string) {
+      tabs.forEach((tab) => {
+        const topic = tab.getAttribute("data-topic");
+        if (topic === selectedTopic) {
+          tab.className =
+            "topic-tab border-b-2 border-[#0A0A0A] text-[#0A0A0A] font-medium pb-3 -mb-[1px] whitespace-nowrap transition-colors cursor-pointer";
+        } else {
+          tab.className =
+            "topic-tab border-b-2 border-transparent text-[#737373] hover:text-[#0A0A0A] pb-3 -mb-[1px] whitespace-nowrap transition-colors cursor-pointer";
+        }
+      });
+
+      let visibleCount = 0;
+      articles.forEach((art) => {
+        const postTopic = art.getAttribute("data-topic");
+        if (selectedTopic === "All" || postTopic === selectedTopic) {
+          (art as HTMLElement).style.display = "block";
+          visibleCount++;
+        } else {
+          (art as HTMLElement).style.display = "none";
+        }
+      });
+
+      if (emptyMessage) {
+        if (visibleCount === 0) {
+          emptyMessage.classList.remove("hidden");
+        } else {
+          emptyMessage.classList.add("hidden");
+        }
+      }
+
+      if (selectedTopic === "All") {
+        history.replaceState(null, "", window.location.pathname);
+      } else {
+        history.replaceState(null, "", `?topic=${encodeURIComponent(selectedTopic)}`);
+      }
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const topic = tab.getAttribute("data-topic") || "All";
+        setTopic(topic);
+      });
+    });
+
+    pills.forEach((pill) => {
+      pill.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const filterTopic = pill.getAttribute("data-filter") || "All";
+        setTopic(filterTopic);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
+
+    if (resetBtn) {
+      resetBtn.addEventListener("click", () => {
+        setTopic("All");
+      });
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTopic = urlParams.get("topic");
+    if (initialTopic) {
+      const matchTab = Array.from(tabs).find(
+        (t) => t.getAttribute("data-topic")?.toLowerCase() === initialTopic.toLowerCase()
+      );
+      if (matchTab) {
+        setTopic(matchTab.getAttribute("data-topic") || "All");
+      }
+    }
+  }
+
+  setupTopicFilter();
+  document.addEventListener("astro:page-load", setupTopicFilter);
+</script>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+</style>
+

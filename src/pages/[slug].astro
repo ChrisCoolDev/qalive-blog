@@ -1,0 +1,290 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { getBlogPosts, getPostBySlug } from "../lib/notion";
+
+export async function getStaticPaths() {
+  const posts = await getBlogPosts("EN");
+  return posts.map((post) => ({
+    params: { slug: post.slug },
+  }));
+}
+
+const { slug } = Astro.params;
+const post = await getPostBySlug(slug, "EN");
+
+if (!post) {
+  return Astro.redirect("/");
+}
+
+function formatDate(dateStr: string) {
+  try {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+const articleSchema = {
+  "@type": "BlogPosting",
+  headline: post.title,
+  description: post.excerpt,
+  datePublished: post.date,
+  author: {
+    "@type": "Person",
+    name: post.author || "QAlive Team",
+  },
+};
+---
+
+<Layout
+  title={`${post.title} – QAlive Blog`}
+  description={post.excerpt}
+  schema={[articleSchema]}
+>
+  <Header />
+
+  <main class="flex-1 py-10 md:py-14 px-5 sm:px-6">
+    <article class="mx-auto max-w-[700px] w-full">
+      <!-- Lien retour au blog -->
+      <div class="mb-8">
+        <a
+          href="/"
+          class="inline-flex items-center gap-1.5 text-[13px] text-[#737373] hover:text-[#0A0A0A] transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="m15 18-6-6 6-6"></path>
+          </svg>
+          Back to all articles
+        </a>
+      </div>
+
+      <!-- En-tête de l'article -->
+      <header class="mb-8 pb-8 border-b border-[#E6E6E6]">
+        <h1 class="text-[30px] md:text-[38px] font-bold tracking-[-0.6px] text-[#0A0A0A] leading-tight mb-4">
+          {post.title}
+        </h1>
+
+        {post.excerpt && (
+          <p class="text-[16px] md:text-[18px] text-[#666] leading-relaxed mb-6 font-normal">
+            {post.excerpt}
+          </p>
+        )}
+
+        <!-- Date & Topic -->
+        <div class="flex items-center justify-between flex-wrap gap-4 pt-2">
+          <div class="flex items-center gap-2 text-[13px] text-[#737373]">
+            <time datetime={post.date}>{formatDate(post.date)}</time>
+            {post.readingTime && (
+              <>
+                <span class="text-[#CCC]">·</span>
+                <span>{post.readingTime}</span>
+              </>
+            )}
+          </div>
+
+          {post.tag && (
+            <a
+              href={`/?topic=${encodeURIComponent(post.tag)}`}
+              class="inline-flex items-center px-3 py-1 rounded-full bg-[#F5F5F3] hover:bg-[#EAEAE8] text-[#555] text-[12px] font-medium transition-colors"
+            >
+              {post.tag}
+            </a>
+          )}
+        </div>
+      </header>
+
+      <!-- Image de couverture Notion (si présente) -->
+      {post.cover && (
+        <div class="mb-10 overflow-hidden rounded-lg border border-[#E6E6E6]">
+          <img
+            src={post.cover}
+            alt={post.title}
+            class="w-full max-h-[420px] object-cover"
+          />
+        </div>
+      )}
+
+      <!-- Corps de l'article -->
+      <div
+        class="blog-content prose prose-sm md:prose-base max-w-none"
+        set:html={post.contentHtml}
+      />
+
+      <!-- Navigation entre articles & Retour -->
+      <div class="mt-14 pt-8 border-t border-[#E6E6E6]">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+          {post.prevPost ? (
+            <a
+              href={`/${post.prevPost.slug}`}
+              class="text-left group flex-1 w-full"
+            >
+              <span class="text-[11px] uppercase tracking-wider text-[#999] block mb-1">
+                ← Previous Article
+              </span>
+              <span class="text-[14px] font-medium text-[#0A0A0A] group-hover:text-[#E85D4A] transition-colors line-clamp-1">
+                {post.prevPost.title}
+              </span>
+            </a>
+          ) : (
+            <div class="flex-1" />
+          )}
+
+          {post.nextPost ? (
+            <a
+              href={`/${post.nextPost.slug}`}
+              class="text-right group flex-1 w-full"
+            >
+              <span class="text-[11px] uppercase tracking-wider text-[#999] block mb-1">
+                Next Article →
+              </span>
+              <span class="text-[14px] font-medium text-[#0A0A0A] group-hover:text-[#E85D4A] transition-colors line-clamp-1">
+                {post.nextPost.title}
+              </span>
+            </a>
+          ) : (
+            <div class="flex-1" />
+          )}
+        </div>
+
+        <div class="text-center mt-10">
+          <a
+            href="/"
+            class="inline-flex items-center justify-center h-9 px-5 rounded-md border border-[#E6E6E6] text-[13px] font-medium text-[#0A0A0A] hover:bg-[#FBFBFA] transition-colors"
+          >
+            Browse all articles
+          </a>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style is:global>
+  .blog-content h1,
+  .blog-content h2,
+  .blog-content h3,
+  .blog-content h4 {
+    color: #0A0A0A;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .blog-content h1 {
+    font-size: 26px;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+  }
+  .blog-content h2 {
+    font-size: 22px;
+    margin-top: 2.25rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.35;
+  }
+  .blog-content h3 {
+    font-size: 18px;
+    margin-top: 1.75rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+  }
+  .blog-content p {
+    font-size: 16px;
+    line-height: 28px;
+    color: #292929;
+    margin-bottom: 1.5rem;
+  }
+  .blog-content ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    font-size: 16px;
+    line-height: 28px;
+    color: #292929;
+    margin-bottom: 1.5rem;
+  }
+  .blog-content ol {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+    font-size: 16px;
+    line-height: 28px;
+    color: #292929;
+    margin-bottom: 1.5rem;
+  }
+  .blog-content li {
+    margin-bottom: 0.5rem;
+  }
+  .blog-content strong {
+    color: #0A0A0A;
+    font-weight: 600;
+  }
+  .blog-content a {
+    color: #E85D4A;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .blog-content a:hover {
+    opacity: 0.85;
+  }
+  .blog-content blockquote {
+    border-left: 3px solid #E85D4A;
+    padding-left: 1.25rem;
+    font-style: italic;
+    color: #444444;
+    margin: 2rem 0;
+    font-size: 17px;
+    line-height: 28px;
+  }
+  .blog-content pre {
+    background-color: #F7F7F5;
+    border: 1px solid #E6E6E6;
+    border-radius: 6px;
+    padding: 1.25rem;
+    font-size: 13px;
+    color: #0A0A0A;
+    overflow-x: auto;
+    margin: 1.75rem 0;
+  }
+  .blog-content code {
+    background-color: #F7F7F5;
+    border: 1px solid #E6E6E6;
+    border-radius: 4px;
+    padding: 0.2rem 0.4rem;
+    font-size: 13px;
+    color: #0A0A0A;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+  .blog-content pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+  .blog-content img {
+    border-radius: 8px;
+    border: 1px solid #E6E6E6;
+    margin: 2rem 0;
+    max-width: 100%;
+    height: auto;
+  }
+  .blog-content hr {
+    border: 0;
+    border-top: 1px solid #E6E6E6;
+    margin: 2.5rem 0;
+  }
+</style>
+
